@@ -66,9 +66,10 @@ const CONFIG={
   APP_VERSION:'yc-mvp-0.1',
   DATASET_VERSION:'ds-1',
   INSTRUMENT_VERSION:'inst-draft-1',
-  LAUNCH_APPROVED:false,        // set true ONLY after director/ethics go-ahead
-  WITHDRAW_BY:'',               // e.g. 'Friday, November 13 at 11:59 PM ET' (required before launch)
-  RESEARCHER_CONTACT:'',        // e.g. 'your.name@miuuniversity.edu' (required before launch)
+  LAUNCH_APPROVED:true,        // set true ONLY after director/ethics go-ahead
+  CLOSES_AT:'2026-11-14T23:59:00-05:00',   // new participants are turned away after this moment (people mid-survey can finish)
+  WITHDRAW_BY:'Saturday, November 14 at 11:59 PM ET',               // e.g. 'Friday, November 13 at 11:59 PM ET' (required before launch)
+  RESEARCHER_CONTACT:'newbatterybuying@gmail.com',        // e.g. 'your.name@miuuniversity.edu' (required before launch)
   APPROVAL_STATEMENT:'',        // optional: institutional review wording supplied by the university
   FORM_ACTION:'https://docs.google.com/forms/d/e/1FAIpQLSeligL6CjiKsPdwkAD3LqWYOb13K9PNbBjMulY5MF6A4UMp1w/formResponse',
   ENTRY:{type:'entry.447546617',code:'entry.667541701',version:'entry.1010329588',payload:'entry.710442815'},   // order typed in prefill link: Type, Code, Version, Payload
@@ -229,9 +230,11 @@ function header(){
   return '<header class="top"><div class="brand">YesChef study</div><div class="mut">'+(S.code?'Your code: '+esc(S.code):'')+'</div></header>'+
     (RETURN?'':'<div class="prog"><i style="width:'+pct+'%"></i></div>')+
     (TEST?'<div class="banner"><b>TEST MODE.</b> '+(params.has('send')?'Submissions are sent but labeled "test".':'Nothing is sent anywhere.')+'</div>':'');}
+function endedPage(){return '<div class="card"><h1>This study has closed</h1><p>Thank you for your interest. The study is no longer accepting new participants.</p></div>';}
 function closedPage(){return '<div class="card"><h1>This study is not open yet</h1><p>Thank you for your interest. Please check back soon.</p></div>';}
 function render(){
   if(!TEST&&(!CONFIG.RESEARCHER_CONTACT||!CONFIG.WITHDRAW_BY||(!CONFIG.LAUNCH_APPROVED&&!PILOT))){root.innerHTML=closedPage();return;}
+  if(!TEST&&CONFIG.CLOSES_AT&&Date.now()>Date.parse(CONFIG.CLOSES_AT)&&S.page==='intro'){root.innerHTML=endedPage();return;}
   let h=header();const p=S.page;
   if(p==='intro')h+=introPage();
   else if(p==='end_noconsent')h+='<div class="card"><h1>Thank you</h1><p>You chose not to take part, so nothing was recorded. You can close this page.</p></div>';
@@ -483,6 +486,7 @@ root.addEventListener('input',e=>{
 
 /* ============ BOOT ============ */
 S=load();
+if(params.has('fresh')&&S.page==='done'&&(S.submitStatus==='sent'||S.submitStatus==='test_not_sent')){S=fresh();save();}
 if(RETURN&&S.page!=='ret'&&S.page!=='retdone')S.page='ret';
 if(S.page==='tasks'&&S.task.status==='running'&&elapsed()>=CONFIG.TASK_LIMIT_SEC){render();finishTask(true);}
 else render();
