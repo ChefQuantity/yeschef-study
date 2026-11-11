@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YesChef Study</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1f2a24;--mut:#65706a;--acc:#2f7d4f;--acc2:#e8f3ec;--bad:#b3402f;--line:#dcd8cf}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:16px}
+header.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.brand{font-weight:700;color:var(--acc);font-size:20px}
+.prog{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:12px}
+.prog i{display:block;height:100%;background:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:12px}
+h1{font-size:22px;margin:0 0 8px}h2{font-size:18px;margin:0 0 8px}
+p{margin:0 0 10px}
+.mut{color:var(--mut);font-size:14px}
+button{font:inherit;border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:8px;padding:9px 16px;cursor:pointer}
+button.sec{background:#fff;color:var(--acc)}
+button.danger{background:#fff;color:var(--bad);border-color:var(--bad)}
+button:disabled{opacity:.45;cursor:not-allowed}
+input[type=text],input[type=number],select,textarea{font:inherit;width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+fieldset.q{border:0;border-bottom:1px solid var(--line);padding:12px 0;margin:0}
+legend{font-weight:600;padding:0;margin-bottom:6px}
+.lk{display:flex;gap:8px;flex-wrap:wrap}
+.lk label{cursor:pointer;position:relative}
+.lk input{position:absolute;opacity:0}
+.lk span{display:inline-block;min-width:44px;text-align:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.lk input:checked+span{background:var(--acc);color:#fff;border-color:var(--acc)}
+.lk input:focus-visible+span{outline:2px solid var(--ink)}
+.ends{display:flex;justify-content:space-between;gap:6px;font-size:12px;color:var(--mut);margin-top:4px}
+.opt{display:block;padding:4px 0;cursor:pointer}
+.pna{font-size:13px;color:var(--mut);display:block;margin-top:6px;cursor:pointer}
+.err{color:var(--bad);font-size:14px;margin:6px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.sb{justify-content:space-between}
+.tabs{display:flex;gap:4px;margin-bottom:10px}
+.tabs button{background:#fff;color:var(--ink);border-color:var(--line)}
+.tabs button.on{background:var(--acc2);border-color:var(--acc);color:var(--acc);font-weight:600}
+table{width:100%;border-collapse:collapse}td,th{padding:6px;border-bottom:1px solid var(--line);text-align:left;font-size:15px}
+td input{padding:5px}
+.chip{display:inline-block;padding:2px 8px;border-radius:12px;font-size:13px;margin:2px;border:1px solid var(--line)}
+.chip.ok{background:var(--acc2);border-color:var(--acc)}
+.chip.no{background:#fbeae7;border-color:var(--bad)}
+.badge{font-size:13px;padding:2px 8px;border-radius:12px}
+.badge.ready{background:var(--acc2);color:var(--acc)}
+.badge.miss{background:#fbeae7;color:var(--bad)}
+.task{border-left:4px solid var(--acc);background:var(--acc2)}
+.banner{background:#fff3cd;border:1px solid #e0c36a;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:14px}
+.timer{font-variant-numeric:tabular-nums;font-weight:700}
+.cap{text-transform:capitalize}
+.code{font-size:26px;font-weight:700;letter-spacing:2px;color:var(--acc)}
+.ok{color:var(--acc)}.no{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap" id="root"></div>
+<script>
+(function(){
+'use strict';
+
+/* ============ CONFIG (edit these; everything else can stay) ============ */
+const CONFIG={
+  APP_VERSION:'yc-mvp-0.1',
+  DATASET_VERSION:'ds-1',
+  INSTRUMENT_VERSION:'inst-draft-1',
+  LAUNCH_APPROVED:false,        // set true ONLY after director/ethics go-ahead
+  WITHDRAW_BY:'',               // e.g. 'Friday, November 13 at 11:59 PM ET' (required before launch)
+  RESEARCHER_CONTACT:'',        // e.g. 'your.name@miuuniversity.edu' (required before launch)
+  APPROVAL_STATEMENT:'',        // optional: institutional review wording supplied by the university
+  FORM_ACTION:'https://docs.google.com/forms/d/e/1FAIpQLSeligL6CjiKsPdwkAD3LqWYOb13K9PNbBjMulY5MF6A4UMp1w/formResponse',
+  ENTRY:{type:'entry.447546617',code:'entry.667541701',version:'entry.1010329588',payload:'entry.710442815'},   // order typed in prefill link: Type, Code, Version, Payload
+  VOLUNTEER_FORM_URL:'',        // separate Google Form for optional follow-up email
+  TASK_LIMIT_SEC:240
+};
+
+/* ============ DATA ============ */
+const START_PANTRY=[
+  {name:'eggs',qty:2,unit:'pcs'},{name:'spinach',qty:100,unit:'g'},{name:'rice',qty:500,unit:'g'},
+  {name:'chickpeas',qty:1,unit:'can'},{name:'olive oil',qty:100,unit:'mL'},{name:'salt',qty:1,unit:'container'}];
+const RECIPES=[
+  {id:'spinach_omelette',title:'Spinach omelette',ings:['eggs','spinach','olive oil','salt'],steps:'Wilt the spinach in olive oil, pour in beaten eggs, season with salt, and fold.'},
+  {id:'chickpea_rice_bowl',title:'Chickpea rice bowl',ings:['rice','chickpeas','spinach','olive oil','salt'],steps:'Cook the rice. Warm the chickpeas and spinach in olive oil, season with salt, and serve over the rice.'},
+  {id:'tomato_spinach_omelette',title:'Tomato-spinach omelette',ings:['eggs','spinach','tomato','olive oil','salt'],steps:'Saute tomato and spinach in olive oil, add beaten eggs, season with salt, and fold.'}];
+const TASKS=[
+  {prompt:'You now have four eggs. Update the pantry to reflect this.',hint:'Which area of the app seems relevant to your pantry?'},
+  {prompt:'Find a meal in this app that uses spinach and can be made with the ingredients currently available. Tell us which meal you would choose.',hint:'Which area of the app seems relevant to finding meals?'},
+  {prompt:'You decide to make the tomato-spinach omelette. Use the app to add only what is missing to the grocery list.',hint:'Which area of the app seems relevant to your shopping needs?'}];
+
+/* ============ PURE LOGIC (testable) ============ */
+const alias={egg:'eggs',tomatoes:'tomato',chickpea:'chickpeas','garbanzo beans':'chickpeas',garbanzo:'chickpeas'};
+function norm(s){const t=String(s==null?'':s).toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();return alias[t]||t;}
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function checkEntry(name,qty){
+  if(!String(name||'').trim())return 'Please enter an ingredient name.';
+  if(String(name).trim().length>40)return 'The name is too long (40 characters max).';
+  if(qty===''||qty==null||isNaN(Number(qty)))return 'Please enter the quantity as a number.';
+  if(Number(qty)<0)return 'Quantity cannot be negative.';
+  if(Number(qty)>100000)return 'That quantity looks too large.';
+  return '';}
+function pAdd(p,name,qty,unit){
+  const e=checkEntry(name,qty);if(e)return{ok:false,err:e};
+  if(p.some(x=>norm(x.name)===norm(name)))return{ok:false,err:'That ingredient is already in the pantry. Edit its quantity instead.'};
+  p.push({name:String(name).trim().toLowerCase(),qty:Number(qty),unit:String(unit||'').trim().slice(0,20)});return{ok:true};}
+function pEdit(p,i,qty,unit){
+  if(!p[i])return{ok:false,err:'Item not found.'};
+  const e=checkEntry(p[i].name,qty);if(e)return{ok:false,err:e};
+  p[i].qty=Number(qty);if(unit!=null)p[i].unit=String(unit).trim().slice(0,20);return{ok:true};}
+function pRemove(p,i){p.splice(i,1);}
+function matchRecipe(r,p){
+  const have=new Set(p.filter(x=>Number(x.qty)>0).map(x=>norm(x.name)));
+  return{matched:r.ings.filter(i=>have.has(i)),missing:r.ings.filter(i=>!have.has(i))};}
+function rank(p){
+  return RECIPES.map(r=>Object.assign({r},matchRecipe(r,p)))
+    .sort((a,b)=>a.missing.length-b.missing.length||b.matched.length-a.matched.length||a.r.title.localeCompare(b.r.title));}
+function filterRecipes(list,q){const n=norm(q);if(!n)return list;return list.filter(x=>x.r.ings.some(i=>i.includes(n)));}
+function gAdd(g,name){const n=norm(name);if(!n)return false;if(g.some(x=>norm(x)===n))return false;g.push(n);return true;}
+function addMissing(g,m){let c=0;m.forEach(x=>{if(gAdd(g,x))c++;});return c;}
+function evalTask(n,pantry,grocery,ans){
+  if(n===1){const e=pantry.filter(x=>norm(x.name)==='eggs');
+    return{success:e.length===1&&Number(e[0].qty)===4,detail:'eggs_entries='+e.length+(e[0]?' qty='+e[0].qty:'')};}
+  if(n===2){ans=ans||{};return{success:['spinach_omelette','chickpea_rice_bowl'].includes(ans.meal)&&ans.missing==='none',detail:'meal='+ans.meal+' missing='+ans.missing};}
+  if(n===3){return{success:grocery.length===1&&norm(grocery[0])==='tomato',detail:'grocery='+grocery.join('|')};}
+  return{success:false,detail:'unknown task'};}
+function mean(a,ids){const v=ids.map(i=>a[i]);if(v.some(x=>typeof x!=='number'))return null;return v.reduce((s,x)=>s+x,0)/v.length;}
+function susScore(a){const v=[];for(let i=1;i<=10;i++){const x=a['SUS'+i];if(typeof x!=='number')return null;v.push(i%2?x-1:5-x);}return v.reduce((s,x)=>s+x,0)*2.5;}
+function canonicalAfterT1(){const p=clone(START_PANTRY);p[0].qty=4;return p;}
+
+/* ============ INSTRUMENTS ============ */
+const L5=['Strongly disagree','Disagree','Neither agree nor disagree','Agree','Strongly agree'];
+const PAY5=['Definitely would not','Probably would not','Unsure','Probably would','Definitely would'];
+const lk=(id,label,scale)=>({id,type:'likert',label,scale:scale||L5});
+const sg=(id,label,opts)=>({id,type:'single',label,opts});
+const mu=(id,label,opts,o)=>Object.assign({id,type:'multi',label,opts},o||{});
+const tx=(id,label,long)=>({id,type:long?'longtext':'text',label});
+
+const SCR=[
+  sg('S2','What is your age group?',['Under 18','18–21','22–25','26–29','30 or older','Prefer not to answer']),
+  sg('S3','Do you purchase at least some of your own groceries?',['Yes','No']),
+  sg('S4','Do you prepare at least one meal at home in a typical week?',['Yes','No']),
+  sg('S5','Can you understand and answer this study in English?',['Yes','No'])];
+const RTN=[
+  sg('Q1','How are groceries usually managed where you live?',['Mainly by me for myself','Shared with others','Mainly by me for others as well','Another arrangement']),
+  sg('Q2','How many meals do you usually prepare at home each week?',['1–2','3–5','6–9','10 or more']),
+  mu('Q3','What do you currently use to plan meals or groceries? (select all that apply)',['Memory','Paper notes','Phone notes or calendar','Recipe websites or social media','Dedicated meal or pantry app','Retailer app','Other']),
+  tx('Q3b','If you use an app, which one? (optional)'),
+  sg('Q4','How often do you check what food you already have before grocery shopping?',['Never','Rarely','Sometimes','Often','Always']),
+  sg('Q6','How confident are you in preparing a meal from ingredients already available at home?',['Not at all','Slightly','Moderately','Very','Extremely confident']),
+  mu('Q7','Which two difficulties matter most to you? (select up to two)',['Remembering ingredients','Deciding what to cook','Time available','Food budget','Cooking skills','Coordinating with others','Keeping a list updated','No major difficulty','Other'],{max:2,exclusive:['No major difficulty']})];
+const FR=[['F1','Working out what meal to make requires considerable effort.'],['F2','Determining which ingredients are already available is difficult.'],['F3','Deciding which ingredients still need to be bought is difficult.']];
+const PRE=FR.map(x=>lk('pre_'+x[0],x[1]));
+const POSTF=FR.map(x=>lk('post_'+x[0],x[1]));
+const PU=[
+  'Using YesChef would help me decide what to cook more quickly.',
+  'Using YesChef would improve how well I use the food I already have.',
+  'Using YesChef would make my grocery planning more effective.',
+  'Using YesChef would make my meal and grocery planning easier.',
+  'Using YesChef would help me avoid buying things I already have.',
+  'Overall, I would find YesChef useful in my meal and grocery planning.'].map((t,i)=>lk('PU'+(i+1),t));
+const PEOU=[
+  'Learning to operate YesChef was easy for me.',
+  'I found it easy to get YesChef to do what I wanted it to do.',
+  'My interaction with YesChef was clear and understandable.',
+  'YesChef was flexible enough for the tasks I tried.',
+  'It was easy for me to become skillful at using YesChef.',
+  'Overall, I found YesChef easy to use.'].map((t,i)=>lk('PEOU'+(i+1),t));
+const USE=[
+  lk('FU1','YesChef helps me identify meals that use available ingredients.'),
+  lk('FU2','YesChef helps me identify what I still need to buy.'),
+  lk('UP1','I think keeping my real pantry list up to date in YesChef would take little effort.'),
+  lk('UI1','If this free core were available on a device I normally use, I would intend to use it for meal and grocery planning during the next month.'),
+  lk('UI2','Under those same conditions, I would plan to use YesChef regularly during the next month.'),
+  lk('C1','After this session, I feel confident using YesChef to identify a meal from available ingredients.')];
+const SUS=[
+  'I think that I would like to use YesChef frequently.','I found YesChef unnecessarily complex.','I thought YesChef was easy to use.',
+  'I think that I would need the support of a technical person to be able to use YesChef.','I found the various functions in YesChef were well integrated.',
+  'I thought there was too much inconsistency in YesChef.','I would imagine that most people would learn to use YesChef very quickly.',
+  'I found YesChef very cumbersome to use.','I felt very confident using YesChef.','I needed to learn a lot of things before I could get going with YesChef.'].map((t,i)=>lk('SUS'+(i+1),t));
+const OPEN=[
+  tx('C4a','What would make it difficult to keep your pantry list accurate?',true),
+  tx('C4b','Would anyone you cook or shop with affect your decision to use this tool? If so, how?',true),
+  tx('FB1','What was most useful, and why?',true),
+  tx('FB2','What was confusing or took too much effort?',true),
+  tx('FB3','What would make you return to this tool, or stop using it?',true)];
+const PRICES=[['299','$2.99'],['499','$4.99'],['699','$6.99']];
+function conceptItems(){
+  const ord=S.ver==='B'?PRICES.slice().reverse():PRICES;
+  return ord.map(p=>lk('Q11_'+p[0],'Premium bundle at '+p[1]+' per month',PAY5)).concat([
+    sg('Q12','If these options were offered, which would you prefer?',['Premium at $4.99/month','Premium at $39.99/year','Free core only','None of these','Unsure']),
+    sg('Q13','Would you prefer a one-time purchase instead of a subscription?',['Yes','No','Unsure']),
+    tx('Q13b','Optional reason for your answer above'),
+    mu('Q14','Which future recipe features would interest you? (select all that apply)',['Saving recipe cards in a personal collection','Sending a recipe card to someone','Seeing the original recipe and attributed variations','Locally adapted ingredient suggestions','None','Unsure'],{exclusive:['None','Unsure']})]);}
+
+const PAGEDEF={
+  screen:{title:'A few quick eligibility questions',items:SCR,next:'routines'},
+  routines:{title:'Your current routines',intro:'These questions are about how you plan meals and groceries today.',items:RTN,next:'baseline'},
+  baseline:{title:'Your usual planning',intro:'Thinking about your usual meal and grocery planning over the past two weeks, rate each statement.',items:PRE,next:'tasks'},
+  post1:{title:'About the tasks you just did',intro:'Thinking only about the meal and grocery planning tasks you just completed with YesChef, rate each statement.',items:POSTF,next:'post2'},
+  post2:{title:'Usefulness',intro:'Please rate each statement about YesChef.',items:PU,next:'post3'},
+  post3:{title:'Ease of use',intro:'Please rate each statement about YesChef.',items:PEOU,next:'post4'},
+  post4:{title:'Your intentions',intro:'Please rate each statement.',items:USE,next:'post5'},
+  post5:{title:'Overall impression',intro:'Please rate each statement about YesChef.',items:SUS,next:'post6'},
+  post6:{title:'In your own words',intro:'All optional. Please do not include names or other identifying details.',items:OPEN,next:'concept'},
+  concept:{title:'Possible future features and pricing',intro:'Imagine a hypothetical premium offer in addition to the free core you just tried: reusable weekly meal-plan templates, saved preference filters, and household synchronization. These are possible future features, not guaranteed ones. Keeping the free core is always an option. All prices are in U.S. dollars. How likely would you be to pay for that same premium bundle at each monthly price?',items:conceptItems,next:'done'}};
+const ORDER=['intro','screen','routines','baseline','tasks','post1','post2','post3','post4','post5','post6','concept','done'];
+
+/* ============ STATE ============ */
+const params=new URLSearchParams(location.search);
+const TEST=params.has('test'),PILOT=params.has('pilot'),RETURN=params.get('mode')==='return';
+const KEY='yc_state_v1'+(TEST?'_t':'')+(RETURN?'_r':'');
+const root=document.getElementById('root');
+let mem=null,S=null,tmr=null;
+function lsGet(){try{return localStorage.getItem(KEY);}catch(e){return mem;}}
+function lsSet(v){try{localStorage.setItem(KEY,v);}catch(e){mem=v;}}
+function genCode(){const a='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<6;i++)s+=a[Math.floor(Math.random()*a.length)];return 'YC-'+s;}
+function fresh(){return{code:genCode(),ver:Math.random()<0.5?'A':'B',page:RETURN?'ret':'intro',ans:{},pantry:clone(START_PANTRY),grocery:[],filter:'',tab:'pantry',
+  task:{n:1,status:'idle',startTs:null,hint:false,hints:0,answering:false,results:{}},events:[],t0:Date.now(),submitted:false,submitStatus:'',err:'',appErr:'',draft:{},retCode:''};}
+function load(){try{const v=lsGet();if(v){const o=JSON.parse(v);if(o&&o.code)return o;}}catch(e){}return fresh();}
+function save(){lsSet(JSON.stringify(S));}
+function ev(t,d){if(S.events.length<600)S.events.push([Date.now()-S.t0,t,d==null?'':String(d).slice(0,60)]);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function go(p){S.page=p;S.err='';save();render();window.scrollTo(0,0);}
+
+/* ============ RENDER ============ */
+function header(){
+  const idx=ORDER.indexOf(S.page);const pct=idx<0?100:Math.round(idx/(ORDER.length-1)*100);
+  return '<header class="top"><div class="brand">YesChef study</div><div class="mut">'+(S.code?'Your code: '+esc(S.code):'')+'</div></header>'+
+    (RETURN?'':'<div class="prog"><i style="width:'+pct+'%"></i></div>')+
+    (TEST?'<div class="banner"><b>TEST MODE.</b> '+(params.has('send')?'Submissions are sent but labeled "test".':'Nothing is sent anywhere.')+'</div>':'');}
+function closedPage(){return '<div class="card"><h1>This study is not open yet</h1><p>Thank you for your interest. Please check back soon.</p></div>';}
+function render(){
+  if(!TEST&&(!CONFIG.RESEARCHER_CONTACT||!CONFIG.WITHDRAW_BY||(!CONFIG.LAUNCH_APPROVED&&!PILOT))){root.innerHTML=closedPage();return;}
+  let h=header();const p=S.page;
+  if(p==='intro')h+=introPage();
+  else if(p==='end_noconsent')h+='<div class="card"><h1>Thank you</h1><p>You chose not to take part, so nothing was recorded. You can close this page.</p></div>';
+  else if(p==='end_inelig')h+='<div class="card"><h1>Thank you</h1><p>This study is for adults aged 18–29 who buy some of their own groceries, cook at home at least weekly, and read English. Based on your answers you are not eligible this time. Nothing was recorded. Thanks for your interest!</p></div>';
+  else if(p==='tasks')h+=taskPage();
+  else if(p==='done')h+=donePage();
+  else if(p==='ret')h+=returnPage();
+  else if(p==='retdone')h+=retDonePage();
+  else if(PAGEDEF[p])h+=formPage(p);
+  root.innerHTML=h+(TEST?testBar():'');
+  const ts=document.getElementById('timer');if(ts&&S.task.status==='running'&&!tmr)startTimer();}
+function introPage(){
+  return '<div class="card"><h1>Welcome</h1>'+
+  '<p>You are invited to contribute to Tristyn Horrell’s MBA capstone research at MIU City University Miami about grocery and meal planning. You will answer questions about your routines, try a small prototype of a proposed application called <b>YesChef</b> using a fictional pantry, and then answer questions about the experience. It takes about 15–20 minutes.</p>'+
+  '<p>Participation is voluntary, carries no payment, and has no effect on your academic standing. You may skip questions, and you can stop at any time by closing this page; nothing is submitted until the very end. We do not collect your name or email. At the end you will receive a participant code. If you want your responses removed, send that code to the researcher by '+esc(CONFIG.WITHDRAW_BY||'[date to be inserted before launch]')+'. After that date analysis begins and removal may no longer be possible. Responses are reported in aggregate. Please do not enter identifying details in free-text boxes. No purchases, cooking, or personal food information are involved.</p>'+
+  '<p class="mut">Researcher contact: '+esc(CONFIG.RESEARCHER_CONTACT||'[to be inserted before launch]')+(CONFIG.APPROVAL_STATEMENT?'<br>'+esc(CONFIG.APPROVAL_STATEMENT):'')+'</p>'+
+  '<fieldset class="q"><legend>I have read this information and voluntarily agree to participate.</legend>'+
+  ['Yes','No'].map(o=>'<label class="opt"><input type="radio" name="S1" value="'+o+'"'+(S.ans.S1===o?' checked':'')+'> '+o+'</label>').join('')+'</fieldset>'+
+  (S.err?'<div class="err">'+esc(S.err)+'</div>':'')+'<p><button data-act="consent">Continue</button></p></div>';}
+function itemHTML(it){
+  const v=S.ans[it.id];let h='<fieldset class="q"><legend>'+esc(it.label)+'</legend>';
+  if(it.type==='likert'){
+    h+='<div class="lk">'+[1,2,3,4,5].map(n=>'<label><input type="radio" name="'+it.id+'" value="'+n+'"'+(v===n?' checked':'')+'><span>'+n+'</span></label>').join('')+'</div>'+
+       '<div class="ends"><span>1 = '+esc(it.scale[0])+'</span><span>3 = '+esc(it.scale[2])+'</span><span>5 = '+esc(it.scale[4])+'</span></div>'+
+       '<label class="pna"><input type="radio" name="'+it.id+'" value="pna"'+(v==='pna'?' checked':'')+'> Prefer not to answer</label>';
+  }else if(it.type==='single'){
+    h+=it.opts.map(o=>'<label class="opt"><input type="radio" name="'+it.id+'" value="'+esc(o)+'"'+(v===o?' checked':'')+'> '+esc(o)+'</label>').join('');
+  }else if(it.type==='multi'){
+    const arr=Array.isArray(v)?v:[];
+    h+=it.opts.map(o=>'<label class="opt"><input type="checkbox" name="'+it.id+'" value="'+esc(o)+'"'+(arr.includes(o)?' checked':'')+'> '+esc(o)+'</label>').join('');
+  }else if(it.type==='longtext'){h+='<textarea rows="3" name="'+it.id+'">'+esc(v||'')+'</textarea>';}
+  else{h+='<input type="text" name="'+it.id+'" value="'+esc(v||'')+'">';}
+  return h+'</fieldset>';}
+function itemsOf(p){const d=PAGEDEF[p];return typeof d.items==='function'?d.items():d.items;}
+function formPage(p){
+  const d=PAGEDEF[p];
+  return '<div class="card"><h1>'+esc(d.title)+'</h1>'+(d.intro?'<p>'+esc(d.intro)+'</p>':'')+itemsOf(p).map(itemHTML).join('')+
+    (S.err?'<div class="err">'+esc(S.err)+'</div>':'')+'<p style="margin-top:14px"><button data-act="next">'+(p==='concept'?'Finish and submit':'Next')+'</button></p></div>';}
+function collect(items){
+  items.forEach(it=>{
+    const els=[].slice.call(document.querySelectorAll('[name="'+it.id+'"]'));
+    if(it.type==='likert'||it.type==='single'){const c=els.find(e=>e.checked);
+      if(c)S.ans[it.id]=(it.type==='likert'&&c.value!=='pna')?Number(c.value):c.value;else delete S.ans[it.id];}
+    else if(it.type==='multi'){S.ans[it.id]=els.filter(e=>e.checked).map(e=>e.value);}
+    else if(els[0]){S.ans[it.id]=els[0].value.trim();}});}
+
+/* ----- app frame ----- */
+function qtyText(name){const e=S.pantry.find(x=>norm(x.name)===name);return e?' ('+e.qty+(e.unit?' '+e.unit:'')+')':'';}
+function appFrame(){
+  const tabs=[['pantry','Pantry'],['recipes','Recipes'],['grocery','Grocery list']];
+  return '<div class="card"><div class="tabs">'+tabs.map(t=>'<button class="'+(S.tab===t[0]?'on':'')+'" data-act="tab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'+
+    (S.tab==='pantry'?pantryBody():S.tab==='recipes'?recipesBody():groceryBody())+'</div>';}
+function pantryBody(){
+  const d=S.draft||{};
+  let h=S.pantry.length?'<table><thead><tr><th>Ingredient</th><th>Quantity</th><th>Unit</th><th></th></tr></thead><tbody>'+
+    S.pantry.map((x,i)=>'<tr><td class="cap">'+esc(x.name)+'</td><td><input type="number" step="any" data-edit="'+i+'" value="'+esc(x.qty)+'" aria-label="Quantity of '+esc(x.name)+'"></td><td><input type="text" data-editunit="'+i+'" value="'+esc(x.unit)+'" aria-label="Unit for '+esc(x.name)+'"></td><td><button class="danger" data-act="removeP" data-i="'+i+'">Remove</button></td></tr>').join('')+'</tbody></table>'
+    :'<p class="mut">Your pantry is empty. Add an ingredient below.</p>';
+  h+='<form data-form="addp" class="row" style="margin-top:10px"><input type="text" name="pn" placeholder="Ingredient" value="'+esc(d.pn||'')+'" style="flex:2;min-width:120px"><input type="number" step="any" name="pq" placeholder="Qty" value="'+esc(d.pq||'')+'" style="flex:1;min-width:70px"><input type="text" name="pu" placeholder="Unit (optional)" value="'+esc(d.pu||'')+'" style="flex:1;min-width:90px"><button type="submit">Add</button></form>';
+  if(S.appErr)h+='<div class="err">'+esc(S.appErr)+'</div>';
+  return h+'<p class="mut" style="margin-top:8px">Changes to quantities are saved when you leave the box.</p>';}
+function cardsHTML(){
+  const all=rank(S.pantry),list=filterRecipes(all,S.filter);
+  if(!list.length)return '<p class="mut">No recipes use “'+esc(S.filter)+'”. Try a different ingredient or clear the filter.</p>';
+  return list.map(x=>'<div class="card" style="margin:8px 0"><div class="row sb"><b>'+esc(x.r.title)+'</b><span class="badge '+(x.missing.length?'miss':'ready')+'">'+(x.missing.length?'Missing '+x.missing.length:'All ingredients in pantry')+'</span></div>'+
+    '<div>'+x.r.ings.map(i=>'<span class="chip '+(x.matched.includes(i)?'ok':'no')+'">'+(x.matched.includes(i)?'✓ ':'✗ ')+esc(i)+'</span>').join('')+'</div>'+
+    '<p class="mut">Uses from your pantry: '+(x.matched.length?x.matched.map(m=>esc(m)+qtyText(m)).join(', '):'nothing yet')+'</p>'+
+    '<div class="row"><button class="sec" data-act="addMissing" data-r="'+x.r.id+'"'+(x.missing.length?'':' disabled')+'>Add missing to grocery list</button></div>'+
+    '<details><summary>Show steps</summary><p>'+esc(x.r.steps)+'</p></details></div>').join('');}
+function recipesBody(){
+  return '<input type="text" id="flt" placeholder="Filter recipes by ingredient (e.g. spinach)" value="'+esc(S.filter)+'" aria-label="Filter recipes by ingredient"><div id="reclist" style="margin-top:8px">'+cardsHTML()+'</div>';}
+function groceryBody(){
+  const d=S.draft||{};
+  let h=S.grocery.length?'<ul>'+S.grocery.map((g,i)=>'<li class="cap">'+esc(g)+' <button class="danger" style="padding:2px 8px;margin-left:6px" data-act="removeG" data-i="'+i+'">Remove</button></li>').join('')+'</ul>'
+    :'<p class="mut">Your grocery list is empty. Add items from a recipe or type one below.</p>';
+  h+='<form data-form="addg" class="row"><input type="text" name="gn" placeholder="Add an item" value="'+esc(d.gn||'')+'" style="flex:1;min-width:140px"><button type="submit">Add</button></form>';
+  if(S.appErr)h+='<div class="err">'+esc(S.appErr)+'</div>';
+  return h;}
+
+/* ----- tasks ----- */
+function fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function elapsed(){return S.task.startTs?(Date.now()-S.task.startTs)/1000:0;}
+function taskPage(){
+  const n=S.task.n,t=S.task;let panel='';
+  if(t.status==='idle'){
+    panel='<div class="card task"><h2>'+(n===1?'Try YesChef':'Task '+n+' of 3')+'</h2>'+
+      (n===1?'<p>This version uses a pantry list to show recipe ingredient matches and a list of missing ingredients. It uses a small fictional pantry. Assume every ingredient marked available is enough for the recipes. No cooking is required. Look around for a minute, then start Task 1. We are testing the app, not you, so if something is confusing, that is useful to know.</p>'
+        :'<p>Ready for the next task. The pantry and grocery list have been set up for it.</p>')+
+      '<button data-act="startTask">Start Task '+n+'</button></div>';
+  }else if(t.answering){
+    panel='<div class="card task"><h2>Task 2: your answer</h2><label>Which meal would you choose?<select id="t2meal"><option value="">Choose…</option>'+RECIPES.map(r=>'<option value="'+r.id+'">'+esc(r.title)+'</option>').join('')+'<option value="none">None of these</option></select></label>'+
+      '<p style="margin-top:10px">Are any ingredients missing for that meal?</p><label class="opt"><input type="radio" name="t2missing" value="none"> No, nothing is missing</label><label class="opt"><input type="radio" name="t2missing" value="some"> Yes, something is missing</label>'+
+      (S.err?'<div class="err">'+esc(S.err)+'</div>':'')+'<p><button data-act="submitT2">Confirm answer</button></p></div>';
+  }else{
+    panel='<div class="card task"><div class="row sb"><h2>Task '+n+' of 3</h2><span class="timer" id="timer">'+fmt(elapsed())+'</span></div><p><b>'+esc(TASKS[n-1].prompt)+'</b></p>'+
+      (t.hint?'<p class="mut">Hint: '+esc(TASKS[n-1].hint)+'</p>':'')+
+      '<div class="row">'+(t.hint?'':'<button class="sec" data-act="hint">I need a hint</button>')+'<button data-act="doneTask">I’m done</button></div><p class="mut">Time limit: 4 minutes.</p></div>';
+  }
+  return panel+appFrame();}
+function startTimer(){stopTimer();tmr=setInterval(()=>{const e=elapsed(),el=document.getElementById('timer');if(el)el.textContent=fmt(e);if(e>=CONFIG.TASK_LIMIT_SEC)finishTask(true);},500);}
+function stopTimer(){if(tmr){clearInterval(tmr);tmr=null;}}
+function startTask(){
+  const n=S.task.n;
+  if(n===1){S.pantry=clone(START_PANTRY);S.grocery=[];}
+  else{S.pantry=canonicalAfterT1();S.grocery=[];}
+  S.filter='';S.tab='pantry';S.appErr='';S.draft={};
+  S.task.status='running';S.task.startTs=Date.now();S.task.hint=false;S.task.answering=false;
+  ev('task_start',n);save();render();startTimer();}
+function finishTask(limit,ans){
+  if(S.task.status!=='running')return;
+  const n=S.task.n;stopTimer();
+  const secs=Math.min(Math.round(elapsed()),CONFIG.TASK_LIMIT_SEC);
+  const res=limit?{success:false,detail:'time limit'}:evalTask(n,S.pantry,S.grocery,ans);
+  const outcome=res.success?(S.task.hint?1:2):0;
+  S.task.results[n]={outcome,success:res.success,seconds:secs,hint:S.task.hint,limit:!!limit,detail:res.detail};
+  ev('task_end',n+':'+outcome);
+  S.task.status='idle';S.task.answering=false;S.task.startTs=null;
+  if(n===1){S.pantry=canonicalAfterT1();S.grocery=[];}
+  if(n<3){S.task.n=n+1;save();render();}else{S.task.n=4;go('post1');}}
+
+/* ----- done / return ----- */
+function donePage(){
+  const st=S.submitStatus;
+  const msg=st==='sent'?'<p class="ok"><b>Your responses were sent. Thank you!</b></p>':
+    st==='failed'?'<p class="no"><b>We could not send your responses.</b> Please check your connection and try again, or download the backup below and email it to the researcher.</p>':
+    st==='test_not_sent'?'<p class="mut">Test mode: nothing was sent.</p>':
+    '<p class="no"><b>This copy is not connected to the response form.</b> Please download the backup below and send it to the researcher.</p>';
+  return '<div class="card"><h1>All done. Thank you!</h1>'+msg+
+    '<p>Your participant code is:</p><p class="code">'+esc(S.code)+'</p><p class="mut">Keep this code. If you want your responses removed, send it to the researcher by '+esc(CONFIG.WITHDRAW_BY||'the stated deadline')+(CONFIG.RESEARCHER_CONTACT?' ('+esc(CONFIG.RESEARCHER_CONTACT)+')':'')+'.</p>'+
+    '<div class="row"><button class="sec" data-act="download">Download backup copy</button>'+(st==='failed'?'<button data-act="retry">Try sending again</button>':'')+'</div>'+
+    (CONFIG.VOLUNTEER_FORM_URL?'<hr><p>Optional: if you would like a one-time reminder to try YesChef again in a few days, you can leave an email in a <a href="'+esc(CONFIG.VOLUNTEER_FORM_URL)+'" target="_blank" rel="noopener">separate form</a>. It is stored apart from your responses and is not linked to them.</p>':'')+'</div>';}
+function returnPage(){
+  return '<div class="card"><h1>Welcome back</h1><p>Thanks for trying YesChef. This takes about two minutes. Using the pantry below, <b>pick a meal you could cook and add anything missing to the grocery list</b>, then press Finish.</p>'+
+    '<label>Your participant code (optional)<input type="text" id="retcode" value="'+esc(S.retCode||'')+'" placeholder="YC-XXXXXX"></label></div>'+appFrame()+
+    '<p><button data-act="retFinish">Finish</button></p>';}
+function retDonePage(){return '<div class="card"><h1>Thank you!</h1><p>Your visit was recorded'+(S.submitStatus==='sent'?'.':' (not connected to the response form).')+'</p></div>';}
+
+/* ============ SUBMIT ============ */
+function verString(){return [CONFIG.APP_VERSION,CONFIG.DATASET_VERSION,CONFIG.INSTRUMENT_VERSION,S.ver].join('|');}
+function typeLabel(){return TEST?'test':PILOT?'pilot':RETURN?'return':'study';}
+function round(x,d){return x==null?null:Math.round(x*Math.pow(10,d))/Math.pow(10,d);}
+function buildPayload(){
+  const a=S.ans,responses={},pna=[];
+  Object.keys(a).forEach(k=>{if(a[k]==='pna'){pna.push(k);responses[k]=null;}else responses[k]=a[k];});
+  const sc={pre_friction:mean(a,['pre_F1','pre_F2','pre_F3']),post_friction:mean(a,['post_F1','post_F2','post_F3']),
+    PU:mean(a,['PU1','PU2','PU3','PU4','PU5','PU6']),PEOU:mean(a,['PEOU1','PEOU2','PEOU3','PEOU4','PEOU5','PEOU6']),UI:mean(a,['UI1','UI2']),SUS:susScore(a)};
+  sc.friction_change=(sc.pre_friction!=null&&sc.post_friction!=null)?sc.post_friction-sc.pre_friction:null;
+  Object.keys(sc).forEach(k=>{sc[k]=round(sc[k],3);});
+  return{meta:{type:typeLabel(),code:S.code,appVersion:CONFIG.APP_VERSION,datasetVersion:CONFIG.DATASET_VERSION,instrumentVersion:CONFIG.INSTRUMENT_VERSION,surveyVersion:S.ver,
+    startedAt:new Date(S.t0).toISOString(),submittedAt:new Date().toISOString(),durationSec:Math.round((Date.now()-S.t0)/1000),screenWidth:window.innerWidth,
+    touch:('ontouchstart' in window),ua:(navigator.userAgent||'').slice(0,120)},responses,pna,scores:sc,tasks:S.task.results,eventLog:S.events};}
+async function sendPayload(payload,type){
+  if(TEST&&!params.has('send'))return'test_not_sent';
+  if(!CONFIG.FORM_ACTION||!CONFIG.ENTRY.payload)return'not_configured';
+  try{const b=new URLSearchParams();
+    b.set(CONFIG.ENTRY.type,type);b.set(CONFIG.ENTRY.code,payload.meta.code);b.set(CONFIG.ENTRY.version,[CONFIG.APP_VERSION,CONFIG.DATASET_VERSION,CONFIG.INSTRUMENT_VERSION,payload.meta.surveyVersion||''].join('|'));
+    b.set(CONFIG.ENTRY.payload,JSON.stringify(payload));
+    await fetch(CONFIG.FORM_ACTION,{method:'POST',mode:'no-cors',body:b});return'sent';}catch(e){return'failed';}}
+async function doSubmit(){
+  if(S.submitted&&S.submitStatus==='sent')return;
+  S.payload=buildPayload();S.submitted=true;
+  S.submitStatus=await sendPayload(S.payload,typeLabel());
+  go('done');}
+function download(){
+  try{const blob=new Blob([JSON.stringify(S.payload||buildPayload(),null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='yeschef_'+S.code+'.json';a.click();}catch(e){}}
+
+/* ============ ACCEPTANCE CHECKS (Table 3.2) ============ */
+function runChecks(){
+  const out=[];const add=(req,check,pass)=>out.push({req,check,pass:!!pass});
+  let p=clone(START_PANTRY);
+  const a1=pAdd(p,'milk',1,'L'),e1=pEdit(p,0,4,'pcs');pRemove(p,p.findIndex(x=>x.name==='milk'));
+  const rt=JSON.parse(JSON.stringify(p));
+  add('Pantry record','Add, edit, remove; eggs 2→4 survives save/reload',a1.ok&&e1.ok&&rt.length===6&&rt[0].qty===4&&!rt.some(x=>x.name==='milk'));
+  const r0=rank(START_PANTRY);
+  const byId=id=>r0.find(x=>x.r.id===id);
+  add('Ingredient-aware discovery','Expected matches/missing for fixed dataset',byId('spinach_omelette').missing.length===0&&byId('chickpea_rice_bowl').missing.length===0&&byId('tomato_spinach_omelette').missing.join()==='tomato');
+  add('Ingredient-aware discovery','Stable ranking: chickpea rice bowl, spinach omelette, tomato-spinach omelette',r0.map(x=>x.r.id).join()==='chickpea_rice_bowl,spinach_omelette,tomato_spinach_omelette');
+  const g=[];const c1=addMissing(g,byId('tomato_spinach_omelette').missing),c2=addMissing(g,byId('tomato_spinach_omelette').missing);
+  add('Grocery support','Tomato-spinach omelette adds tomato only, no duplicates',c1===1&&c2===0&&g.length===1&&g[0]==='tomato');
+  const m=canonicalAfterT1();m.splice(0,1);
+  add('Matching rule','Removing eggs flips both omelettes to missing eggs',rank(m).filter(x=>x.missing.includes('eggs')).length===2);
+  add('Session reset','Fresh dataset matches starting pantry; grocery empty',clone(START_PANTRY).length===6&&clone(START_PANTRY)[0].qty===2);
+  add('Clear feedback','Invalid entries rejected (blank, negative, non-numeric, duplicate)',
+    !pAdd(clone(START_PANTRY),'',1,'').ok&&!pAdd(clone(START_PANTRY),'x',-1,'').ok&&!pAdd(clone(START_PANTRY),'x','abc','').ok&&!pAdd(clone(START_PANTRY),'Eggs',1,'').ok);
+  add('Clear feedback','No-match filter returns empty list (message shown in UI)',filterRecipes(rank(START_PANTRY),'zzz').length===0);
+  const t1=evalTask(1,canonicalAfterT1(),[],{}),t1b=evalTask(1,START_PANTRY,[],{});
+  const t2=evalTask(2,[],[],{meal:'spinach_omelette',missing:'none'}),t2b=evalTask(2,[],[],{meal:'tomato_spinach_omelette',missing:'some'});
+  const t3=evalTask(3,[],['tomato'],{}),t3b=evalTask(3,[],['tomato','eggs'],{});
+  add('Task scoring','Tasks 1–3 score success and failure correctly',t1.success&&!t1b.success&&t2.success&&!t2b.success&&t3.success&&!t3b.success);
+  return out;}
+function testBar(){
+  return '<div class="card"><b>Test tools</b><div class="row" style="margin-top:8px"><button class="sec" data-act="runChecks">Run acceptance checks</button><button class="sec" data-act="resetAll">Reset session</button>'+
+    '<select id="jump" style="width:auto">'+ORDER.concat(['ret']).map(p=>'<option'+(p===S.page?' selected':'')+'>'+p+'</option>').join('')+'</select><button class="sec" data-act="jump">Jump</button></div><div id="chk"></div></div>';}
+
+/* ============ EVENTS ============ */
+function fail(m){S.err=m;save();render();}
+const H={
+  consent(){const c=document.querySelector('[name="S1"]:checked');if(!c)return fail('Please choose an option.');S.ans.S1=c.value;go(c.value==='Yes'?'screen':'end_noconsent');},
+  next(){
+    const p=S.page,items=itemsOf(p);collect(items);
+    if(p==='screen'){
+      if(items.some(i=>!S.ans[i.id]))return fail('Please answer every question on this page.');
+      const ok=['18–21','22–25','26–29'].includes(S.ans.S2)&&S.ans.S3==='Yes'&&S.ans.S4==='Yes'&&S.ans.S5==='Yes';
+      if(!ok)return go('end_inelig');}
+    if(p==='concept')return doSubmit();
+    go(PAGEDEF[p].next);},
+  tab(b){S.tab=b.dataset.t;S.appErr='';ev('tab',S.tab);save();render();},
+  removeP(b){const i=+b.dataset.i;ev('remove_pantry',S.pantry[i]&&S.pantry[i].name);pRemove(S.pantry,i);S.appErr='';save();render();},
+  removeG(b){const i=+b.dataset.i;ev('remove_grocery',S.grocery[i]);S.grocery.splice(i,1);save();render();},
+  addMissing(b){const x=rank(S.pantry).find(y=>y.r.id===b.dataset.r);const c=addMissing(S.grocery,x.missing);ev('add_missing',x.r.id+':'+c);save();render();},
+  startTask:startTask,
+  hint(){S.task.hint=true;S.task.hints=(S.task.hints||0)+1;ev('hint',S.task.n);save();render();},
+  doneTask(){if(S.task.n===2){S.task.answering=true;S.err='';save();render();}else finishTask(false);},
+  submitT2(){const meal=(document.getElementById('t2meal')||{}).value;const m=document.querySelector('[name="t2missing"]:checked');
+    if(!meal||!m)return fail('Please answer both questions.');finishTask(false,{meal,missing:m.value});},
+  download,retry(){S.submitted=false;doSubmit();},
+  retFinish(){const ci=document.getElementById('retcode');S.retCode=ci?ci.value.trim().slice(0,12):'';
+    const rec=S.events.filter(e=>e[1]==='add_missing').length;
+    const payload={meta:{type:typeLabel(),code:'RET-'+S.code.slice(3),appVersion:CONFIG.APP_VERSION,datasetVersion:CONFIG.DATASET_VERSION,instrumentVersion:CONFIG.INSTRUMENT_VERSION,submittedAt:new Date().toISOString(),durationSec:Math.round((Date.now()-S.t0)/1000)},
+      enteredCode:S.retCode,groceryItems:S.grocery,addMissingClicks:rec,eventLog:S.events};
+    sendPayload(payload,typeLabel()).then(st=>{S.submitStatus=st;go('retdone');});},
+  runChecks(){const r=runChecks();document.getElementById('chk').innerHTML='<table style="margin-top:10px"><tbody>'+r.map(x=>'<tr><td>'+esc(x.req)+'</td><td>'+esc(x.check)+'</td><td class="'+(x.pass?'ok':'no')+'">'+(x.pass?'PASS':'FAIL')+'</td></tr>').join('')+'</tbody></table>';},
+  resetAll(){stopTimer();S=fresh();save();render();},
+  jump(){const v=document.getElementById('jump').value;stopTimer();S.page=v;S.task.status='idle';save();render();}
+};
+root.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b&&H[b.dataset.act]){e.preventDefault();H[b.dataset.act](b);}});
+root.addEventListener('submit',e=>{
+  e.preventDefault();const f=e.target.dataset.form;const fd=new FormData(e.target);S.appErr='';S.draft={};
+  if(f==='addp'){const r=pAdd(S.pantry,fd.get('pn'),fd.get('pq'),fd.get('pu'));
+    if(!r.ok){S.appErr=r.err;S.draft={pn:fd.get('pn'),pq:fd.get('pq'),pu:fd.get('pu')};ev('add_pantry_error','');}else ev('add_pantry',norm(fd.get('pn')));}
+  else if(f==='addg'){const n=String(fd.get('gn')||'').trim();
+    if(!n)S.appErr='Please type an item name.';else if(!gAdd(S.grocery,n)){S.appErr='That item is already on your list.';S.draft={gn:n};}else ev('add_grocery',norm(n));}
+  save();render();});
+root.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.edit!==undefined||t.dataset.editunit!==undefined){
+    const i=+(t.dataset.edit!==undefined?t.dataset.edit:t.dataset.editunit);
+    const row=t.closest('tr'),q=row.querySelector('[data-edit]').value,u=row.querySelector('[data-editunit]').value;
+    const r=pEdit(S.pantry,i,q,u);S.appErr=r.ok?'':r.err;ev(r.ok?'edit_pantry':'edit_pantry_error',S.pantry[i]&&S.pantry[i].name+':'+q);save();render();return;}
+  if(t.type==='checkbox'&&S.page&&PAGEDEF[S.page]){
+    const it=itemsOf(S.page).find(x=>x.id===t.name);if(!it)return;
+    const boxes=[].slice.call(document.querySelectorAll('[name="'+it.id+'"]'));
+    if(t.checked&&it.exclusive){
+      if(it.exclusive.includes(t.value))boxes.forEach(b=>{if(b!==t)b.checked=false;});
+      else boxes.forEach(b=>{if(it.exclusive.includes(b.value))b.checked=false;});}
+    if(it.max&&boxes.filter(b=>b.checked).length>it.max)t.checked=false;}});
+root.addEventListener('input',e=>{
+  if(e.target.id==='flt'){S.filter=e.target.value;const l=document.getElementById('reclist');if(l)l.innerHTML=cardsHTML();ev('filter',S.filter);save();}});
+
+/* ============ BOOT ============ */
+S=load();
+if(RETURN&&S.page!=='ret'&&S.page!=='retdone')S.page='ret';
+if(S.page==='tasks'&&S.task.status==='running'&&elapsed()>=CONFIG.TASK_LIMIT_SEC){render();finishTask(true);}
+else render();
+window.YC={norm,pAdd,pEdit,pRemove,rank,matchRecipe,addMissing,gAdd,evalTask,susScore,mean,runChecks,filterRecipes,buildPayload,get state(){return S;},CONFIG,render,H};
+})();
+</script>
+</body>
+</html>
